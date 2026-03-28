@@ -3,6 +3,7 @@ import {
   createJob,
   getAllJobs,
   getJobById,
+  getFilteredJobs,
   updateJob,
   deleteJob
 } from "../controllers/jobController.js";
@@ -18,5 +19,7 @@ router.delete("/:id", protect(["admin", "recruiter"]), deleteJob);
 // Public / Student
 router.get("/", getAllJobs);
 router.get("/:id", getJobById);
+// Public / Student (ADVANCED SEARCH HERE)
+router.get("/", getFilteredJobs);
 
 export default router;

@@ -1,7 +1,8 @@
 // controllers/studentController.js
 import StudentProfile from "../models/StudentProfile.js";
 import Job from "../models/Job.js";
-
+import { checkEligibility } from "../utils/eligibility.js";
+import cloudinary from "../config/cloudinary.js";
 // Create or Update Profile
 export const createOrUpdateProfile = async (req, res) => {
   try {
@@ -58,28 +59,33 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
-// View Eligible Jobs
+
+
+// View Jobs with Eligibility Info
 export const getEligibleJobs = async (req, res) => {
   try {
     const userId = req.user._id;
+
     const profile = await StudentProfile.findOne({ userId });
-    if (!profile) return res.status(404).json({ message: "Profile not found" });
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
 
     const jobs = await Job.find();
-    const eligibleJobs = jobs.filter(job => {
-      const e = job.eligibility;
 
-      const yearCheck = e.requiredAcademicYears?.includes(profile.year);
-      const cgpaCheck = profile.cgpa >= e.minCgpa;
-      const branchCheck = e.allowedBranches?.includes(profile.department);
-      const backlogCheck = e.noActiveBacklogs ? profile.activeBacklogs === 0 : true;
-      const skillsCheck = e.requiredSkills?.every(skill => profile.technicalSkills.includes(skill)) ?? true;
-      const certCheck = e.requiredCertifications?.every(cert => profile.certifications.includes(cert)) ?? true;
+    // 🔥 Use eligibility utility
+    const jobsWithEligibility = jobs.map(job => {
+      const { isEligible, reasons } = checkEligibility(profile, job);
 
-      return yearCheck && cgpaCheck && branchCheck && backlogCheck && skillsCheck && certCheck;
+      return {
+        ...job.toObject(),
+        isEligible,
+        reasons
+      };
     });
 
-    res.json(eligibleJobs);
+    res.json(jobsWithEligibility);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -121,5 +127,25 @@ export const updateProfile = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+
+
+
+export const uploadResume = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    return res.json({
+      message: "Upload success",
+      url: req.file.path,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Upload failed" });
   }
 };
