@@ -18,7 +18,7 @@ export const createJob = async (req, res) => {
     const notifications = students.map((student) =>
       createNotification({
         userId: student._id,
-        title: "New Job Posted 🚀",
+        title: "New Job Posted",
         message: `${job.jobTitle} at ${job.companyName}`,
         type: "job",
         link: `/jobs/${job._id}`,
