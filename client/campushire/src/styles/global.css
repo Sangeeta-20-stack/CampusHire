@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================= BASE ================= */
+@layer base {
+  :root {
+    --bg-primary: #080918;
+    --bg-secondary: #0e0f1e;
+    --bg-card: #111232;
+    --bg-card-hover: #181a3d;
+    --border: #1e1f4f;
+    --text-primary: #f0f0f5;
+    --text-secondary: #9496b8;
+    --accent: #6366f1;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Sora', sans-serif;
+  }
+}
+
+/* ================= COMPONENTS ================= */
+@layer components {
+  .card {
+    @apply bg-ink-800 border border-ink-700 rounded-2xl;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-300 hover:bg-ink-700;
+  }
+
+  .btn-primary {
+    @apply bg-signal-500 text-white px-5 py-2 rounded-xl;
+  }
+
+  .btn-secondary {
+    @apply bg-ink-700 text-ink-200 px-5 py-2 rounded-xl;
+  }
+
+  .btn-ghost {
+    @apply text-ink-300 px-4 py-2 rounded-xl;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-ink-50;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-signal-400 to-purple-400 bg-clip-text text-transparent;
+  }
+
+  .glow-dot {
+    @apply w-2 h-2 rounded-full bg-signal-500;
+  }
+}
+
+/* ================= UTILITIES ================= */
+@layer utilities {
+  .bg-grid-ink {
+    background-image: radial-gradient(circle, #6366f115 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}

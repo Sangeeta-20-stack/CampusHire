@@ -1,21 +1,32 @@
-import { useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
-function App() {
-  const [count, setCount] = useState(0);
+// Page
+import Landing from "./pages/common/Landing";
 
+export default function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center gap-4">
-      <h1 className="text-3xl font-bold text-blue-600">Tailwind CSS is Working!</h1>
-      <p className="text-gray-700">Click the button to test state:</p>
-      <button
-        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
-        onClick={() => setCount(count + 1)}
-      >
-        Count: {count}
-      </button>
-      <div className="w-40 h-40 bg-red-400 rounded shadow-lg"></div>
-    </div>
+    <BrowserRouter>
+
+      {/* ✅ Global Toast */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#0b1a2f",
+            color: "#ffffff",
+            border: "1px solid rgba(255,255,255,0.1)",
+            backdropFilter: "blur(10px)",
+          },
+        }}
+      />
+
+      {/* ✅ Routes */}
+      <Routes>
+        <Route path="/" element={<Landing />} />
+      </Routes>
+
+    </BrowserRouter>
   );
 }
-
-export default App;

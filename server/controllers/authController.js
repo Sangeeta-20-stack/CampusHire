@@ -7,17 +7,19 @@ export const signup = async (req, res) => {
   try {
     const { name, email, password, role, adminSecret } = req.body;
 
-    // ❌ Restrict roles (no recruiter)
+    // Restrict roles
     let userRole = "student";
     if (role === "admin") {
-      // 🔐 Only allow admin creation with secret
+      // Only allow admin creation with secret key
       if (adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(403).json({ message: "Not authorized to create admin" });
+        return res
+          .status(403)
+          .json({ message: "Not authorized to create admin" });
       }
       userRole = "admin";
     }
 
-    // Check if user exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -31,10 +33,10 @@ export const signup = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: userRole
+      role: userRole,
     });
 
-    // Token
+    // Sign token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -42,7 +44,6 @@ export const signup = async (req, res) => {
     );
 
     res.status(201).json({ user, token });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -67,17 +68,20 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // 🔐 Extra admin protection
-    if (user.role === "admin") {
-      const adminHeader = req.headers["x-admin-access"];
-      if (adminHeader !== "true") {
-        return res.status(403).json({
-          message: "Admin access denied (missing header)"
-        });
-      }
-    }
+    // ✅ FIX: Removed the x-admin-access header check.
+    //
+    // WHY IT WAS BROKEN:
+    // The axios interceptor sets that header by reading user.role from
+    // localStorage — but on the very first login, localStorage is empty,
+    // so the header is never sent, and the backend returned 403.
+    //
+    // WHY IT'S SAFE TO REMOVE:
+    // The admin role is already protected at signup (requires ADMIN_SECRET).
+    // bcrypt password verification is sufficient protection at login.
+    // The role stored in the DB is the source of truth — not a header
+    // that any client can spoof anyway.
 
-    // Token
+    // Sign token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -85,7 +89,6 @@ export const login = async (req, res) => {
     );
 
     res.json({ user, token });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
