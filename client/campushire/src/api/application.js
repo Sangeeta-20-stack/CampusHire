@@ -19,3 +19,7 @@ export const updateRound = (id, data) =>
 // Schedule interview
 export const scheduleInterview = (id, data) =>
   API.patch(`/applications/${id}/schedule`, data);
+
+// Get single application by ID (add this)
+export const getApplicationById = (id) =>
+  API.get(`/applications/${id}`);

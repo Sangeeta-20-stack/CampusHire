@@ -5,6 +5,7 @@ import {
   getMyApplications,
   getApplicationsByJob,
   updateRoundStatus,
+  getApplicationById,
   scheduleInterview
 } from "../controllers/applicationController.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -16,6 +17,7 @@ router.post("/:jobId", protect(["student"]), applyJob);
 router.get("/", protect(["student"]), getMyApplications);
 
 // Admin / Recruiter
+router.get("/applications/:id", protect(["admin", "recruiter"]), getApplicationById);
 router.get("/job/:jobId", protect(["admin", "recruiter"]), getApplicationsByJob);
 router.patch("/:id/round", protect(["admin", "recruiter"]), updateRoundStatus);
 router.patch("/:id/schedule", protect(["admin","recruiter"]), scheduleInterview);

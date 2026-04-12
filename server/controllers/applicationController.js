@@ -275,3 +275,17 @@ export const scheduleInterview = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+export const getApplicationById = async (req, res) => {
+  try {
+    const app = await Application.findById(req.params.id)
+      .populate("studentId")
+      .populate("jobId");
+
+    if (!app) return res.status(404).json({ message: "Not found" });
+
+    res.json(app);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

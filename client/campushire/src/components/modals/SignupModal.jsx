@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { signupUser } from "../../api/auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, Shield } from "lucide-react";
+import {
+  GraduationCap,
+  Shield,
+  Eye,
+  EyeOff,
+  CheckCircle,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SignupModal({
@@ -12,6 +18,9 @@ export default function SignupModal({
 }) {
   const [currentRole, setCurrentRole] = useState(role || "student");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     name: "",
@@ -24,71 +33,38 @@ export default function SignupModal({
     if (role) setCurrentRole(role);
   }, [role]);
 
-  useEffect(() => {
-    if (!open) {
-      setForm({
-        name: "",
-        email: "",
-        password: "",
-        secretKey: "",
-      });
-      setLoading(false);
-    }
-  }, [open]);
+  const validate = () => {
+    let err = {};
+    if (form.name.trim().length < 3) err.name = "Minimum 3 characters";
+    if (!/\S+@\S+\.\S+/.test(form.email)) err.email = "Invalid email";
+    if (form.password.length < 6) err.password = "Min 6 characters";
+    if (currentRole === "admin" && !form.secretKey)
+      err.secretKey = "Required";
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
 
-  const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+  const strength = () => {
+    const p = form.password;
+    if (p.length > 10 && /\d/.test(p)) return "strong";
+    if (p.length >= 6) return "medium";
+    return "weak";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
-
-    if (form.name.trim().length < 3) {
-      toast.error("Name must be at least 3 characters");
-      return;
-    }
-
-    if (!form.email || !form.password) {
-      toast.error("All fields are required");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       setLoading(true);
-
-      const payload = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-        role: currentRole,
-      };
-
-      // IMPORTANT FIX: backend expects adminSecret
-      if (currentRole === "admin") {
-        payload.adminSecret = form.secretKey;
-      }
-
-      const promise = signupUser(payload);
-
-      toast.promise(promise, {
-        loading: "Creating account...",
-        success: "Account created successfully 🎉",
-        error: (err) =>
-          err?.response?.data?.message || "Signup failed",
-      });
-
-      const { data } = await promise;
-
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
-
-      setOpen(false);
-    } catch (err) {
-      console.error(err);
+      await signupUser({ ...form, role: currentRole });
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        setOpen(false);
+      }, 2000);
+    } catch {
+      toast.error("Signup failed");
     } finally {
       setLoading(false);
     }
@@ -99,71 +75,81 @@ export default function SignupModal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4 py-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            initial={{ scale: 0.95, y: 40, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
-          >
-            {/* LEFT */}
-            <div className="relative md:w-1/2 h-56 md:h-auto flex items-center justify-center"
+        <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+
+          <div className="w-full max-w-5xl flex rounded-3xl overflow-hidden">
+
+            {/* LEFT SIDE (FIXED) */}
+            <div
+              className="hidden md:flex md:w-1/2 relative items-center justify-center"
               style={{
                 backgroundImage:
-                  "url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80')",
+                  "url('https://images.unsplash.com/photo-1523240795612-9a054b0db644')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
             >
-              <div className="absolute inset-0 bg-[#0b1a2f]/85"></div>
+              {/* overlay */}
+             <div className="absolute inset-0 bg-[#6B8C72]/60 backdrop-blur-md"></div>
 
-              <div className="relative z-10 text-center px-6 text-white">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-white/10 border border-white/20">
-                  <Icon className="text-yellow-400" size={30} />
-                </div>
+              {/* content */}
+             <div className="relative z-10 text-center px-6 text-[#F6F0D6]">
+               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center 
+rounded-full bg-white/10 border border-white/20 backdrop-blur-md">
+  <Icon size={30} className="text-[#F6F0D6]" />
+</div>
 
                 <h3 className="text-2xl font-bold mb-2">
                   {currentRole === "admin" ? "Admin Portal" : "Student Portal"}
                 </h3>
 
-                <p className="text-white/70 text-sm">
+                <p className="text-white/80 text-sm">
                   {currentRole === "admin"
-                    ? "Manage drives, recruiters & analytics"
-                    : "Apply, track and build your career"}
+                    ? "Manage drives & analytics"
+                    : "Apply and track your career"}
                 </p>
               </div>
             </div>
 
-            {/* RIGHT */}
-            <div className="md:w-1/2 bg-white text-gray-800 p-6 sm:p-8 md:p-10 relative">
+            {/* RIGHT SIDE */}
+            <div className="w-full md:w-1/2 bg-[#F6F0D6] p-8 relative">
 
-              <button
-                onClick={() => setOpen(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-              >
-                ✕
-              </button>
+              {/* SUCCESS */}
+              <AnimatePresence>
+                {success && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute inset-0 flex flex-col items-center justify-center bg-[#F6F0D6] z-20"
+                  >
+                    <CheckCircle className="text-[#6B8C72]" size={50} />
+                    <p className="mt-2 font-semibold text-[#1E2E22]">
+                      Account Created!
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              <h2 className="text-2xl font-bold mb-6">
-                Create account
-              </h2>
+              {/* HEADER */}
+              <div className="mb-6">
+                <h2 className="text-3xl font-extrabold text-[#1E2E22]">
+                  Create account
+                </h2>
+                <p className="text-[#3D5C45] text-sm mt-1">
+                  Start your journey with CampusHire
+                </p>
+              </div>
 
               {/* ROLE SWITCH */}
-              <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-white rounded-lg p-1 mb-6 shadow-sm">
                 {["student", "admin"].map((r) => (
                   <button
                     key={r}
-                    type="button"
                     onClick={() => setCurrentRole(r)}
-                    className={`flex-1 py-2 rounded-md text-sm font-medium transition ${
+                    className={`flex-1 py-2 rounded-md text-sm font-semibold transition ${
                       currentRole === r
-                        ? "bg-yellow-400 text-[#0b1a2f]"
-                        : "text-gray-500"
+                        ? "bg-[#6B8C72] text-white"
+                        : "text-[#3D5C45]"
                     }`}
                   >
                     {r}
@@ -172,73 +158,114 @@ export default function SignupModal({
               </div>
 
               {/* FORM */}
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
 
-                <input
-                  name="name"
-                  value={form.name}
-                  placeholder="Full Name"
-                  required
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border"
-                />
-
-                <input
-                  name="email"
-                  value={form.email}
-                  type="email"
-                  placeholder="Email"
-                  required
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border"
-                />
-
-                <input
-                  name="password"
-                  value={form.password}
-                  type="password"
-                  placeholder="Password"
-                  required
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border"
-                />
-
-                {currentRole === "admin" && (
+                {/* NAME */}
+                <div>
                   <input
-                    name="secretKey"
-                    value={form.secretKey}
-                    type="password"
-                    placeholder="Admin Secret Key"
-                    required
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-lg border border-yellow-400"
+                    placeholder="Full Name"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm({ ...form, name: e.target.value })
+                    }
+                    className="w-full px-4 py-3 rounded-lg border border-[#6B8C72]/30 
+                    bg-white text-[#1E2E22] placeholder-[#6B8C72]/60 focus:border-[#6B8C72] outline-none"
                   />
+                  {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                </div>
+
+                {/* EMAIL */}
+                <div>
+                  <input
+                    placeholder="Email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
+                    className="w-full px-4 py-3 rounded-lg border border-[#6B8C72]/30 
+                    bg-white text-[#1E2E22] placeholder-[#6B8C72]/60 focus:border-[#6B8C72] outline-none"
+                  />
+                  {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+                </div>
+
+                {/* PASSWORD */}
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm({ ...form, password: e.target.value })
+                    }
+                    className="w-full px-4 py-3 rounded-lg border border-[#6B8C72]/30 
+                    bg-white text-[#1E2E22] placeholder-[#6B8C72]/60 focus:border-[#6B8C72] outline-none"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-[#6B8C72]"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+
+                  {/* strength */}
+                  <div className="h-1 mt-2 bg-gray-200 rounded">
+                    <div
+                      className={`h-1 ${
+                        strength() === "strong"
+                          ? "bg-green-500 w-full"
+                          : strength() === "medium"
+                          ? "bg-yellow-400 w-2/3"
+                          : "bg-red-400 w-1/3"
+                      }`}
+                    />
+                  </div>
+
+                  {errors.password && (
+                    <p className="text-xs text-red-500">{errors.password}</p>
+                  )}
+                </div>
+
+                {/* ADMIN KEY */}
+                {currentRole === "admin" && (
+                  <div>
+                    <input
+                      placeholder="Admin Secret Key"
+                      value={form.secretKey}
+                      onChange={(e) =>
+                        setForm({ ...form, secretKey: e.target.value })
+                      }
+                      className="w-full px-4 py-3 rounded-lg border border-[#6B8C72]/30 
+                      bg-white text-[#1E2E22] placeholder-[#6B8C72]/60"
+                    />
+                    {errors.secretKey && (
+                      <p className="text-xs text-red-500">{errors.secretKey}</p>
+                    )}
+                  </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-yellow-400 text-[#0b1a2f] py-3 rounded-lg font-semibold"
-                >
+                {/* BUTTON */}
+                <button className="w-full bg-[#6B8C72] text-white py-3 rounded-lg font-semibold hover:bg-[#3D5C45] transition">
                   {loading ? "Creating..." : "Sign Up"}
                 </button>
               </form>
 
-              {/* LOGIN SWITCH */}
-              <p className="text-sm text-gray-500 mt-6 text-center">
+              {/* LOGIN */}
+              <p className="text-sm text-center mt-6 text-[#3D5C45]">
                 Already have an account?{" "}
                 <span
                   onClick={() => {
                     setOpen(false);
                     setLoginOpen(true);
                   }}
-                  className="text-yellow-500 font-medium cursor-pointer"
+                  className="text-[#6B8C72] font-semibold cursor-pointer"
                 >
                   Login
                 </span>
               </p>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
